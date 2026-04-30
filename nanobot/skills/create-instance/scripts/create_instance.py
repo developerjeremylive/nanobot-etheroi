@@ -68,6 +68,7 @@ def _patch_config(
     channel: str,
     workspace: Path,
     model: str | None,
+    name: str | None = None,
     inherit_config_path: Path | None = None,
 ) -> dict:
     """Patch the generated config: enable channel, set workspace, optionally set model."""
@@ -227,6 +228,7 @@ def main() -> None:
         channel=args.channel,
         workspace=workspace,
         model=args.model,
+        name=name,
         inherit_config_path=inherit_path,
     )
 

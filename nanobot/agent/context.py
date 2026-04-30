@@ -39,6 +39,7 @@ class ContextBuilder:
         skill_names: list[str] | None = None,
         channel: str | None = None,
         session_summary: str | None = None,
+        session_key: str | None = None,
     ) -> str:
         """Build the system prompt from identity, bootstrap files, memory, and skills."""
         parts = [self._get_identity(channel=channel)]
@@ -73,7 +74,28 @@ class ContextBuilder:
         if session_summary:
             parts.append(f"[Archived Context Summary]\n\n{session_summary}")
 
+        # Inject P2P collaboration hint for task-scoped sessions
+        if session_key and session_key.startswith("task:"):
+            parts.append(self._p2p_collaboration_hint())
+
         return "\n\n---\n\n".join(parts)
+
+    @staticmethod
+    def _p2p_collaboration_hint() -> str:
+        return (
+            "# Multi-Agent Collaboration\n\n"
+            "You are part of a decentralized agent network. You can:\n"
+            "- Use `broadcast_task` to announce subtasks and collect BIDs\n"
+            "- Use `dispatch_task` to assign tasks to specific agents\n"
+            "- Use `poll_task_result` to check task status\n"
+            "- Use `report_user` to deliver final results to the user\n"
+            "- Use `finalize_task` to terminate tasks\n\n"
+            "Rules:\n"
+            "- Never block waiting for results. Dispatch and continue.\n"
+            "- If a task times out, decide whether to retry, failover, or report partial.\n"
+            "- Respect the user's INTERRUPT messages — they have highest priority.\n"
+            "- You are currently in a task-scoped session; focus on the delegated task."
+        )
 
     def _get_identity(self, channel: str | None = None) -> str:
         """Get the core identity section."""
@@ -154,6 +176,7 @@ class ContextBuilder:
         sender_id: str | None = None,
         session_summary: str | None = None,
         session_metadata: Mapping[str, Any] | None = None,
+        session_key: str | None = None,
     ) -> list[dict[str, Any]]:
         """Build the complete message list for an LLM call."""
         extra = goal_state_runtime_lines(session_metadata)
@@ -175,7 +198,7 @@ class ContextBuilder:
         else:
             merged = user_content + [{"type": "text", "text": runtime_ctx}]
         messages = [
-            {"role": "system", "content": self.build_system_prompt(skill_names, channel=channel, session_summary=session_summary)},
+            {"role": "system", "content": self.build_system_prompt(skill_names, channel=channel, session_summary=session_summary, session_key=session_key)},
             *history,
         ]
         if messages[-1].get("role") == current_role:

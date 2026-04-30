@@ -192,3 +192,4 @@ Built-in WebSocket channel for programmatic access.
 - `port` — Listen port (default: 8765)
 - `allow_from` — Allowed origins (default: `["*"]`)
 - `streaming` — Enable streaming (default: true)
+

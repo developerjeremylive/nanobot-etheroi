@@ -60,6 +60,8 @@ class HeartbeatService:
         interval_s: int = 30 * 60,
         enabled: bool = True,
         timezone: str | None = None,
+        p2p_shell: Any | None = None,
+        bus: Any | None = None,
     ):
         self.workspace = workspace
         self.provider = provider
@@ -69,8 +71,11 @@ class HeartbeatService:
         self.interval_s = interval_s
         self.enabled = enabled
         self.timezone = timezone
+        self.p2p_shell = p2p_shell
+        self.bus = bus
         self._running = False
         self._task: asyncio.Task | None = None
+        self._last_inbox_scan: float = 0.0
 
     @property
     def heartbeat_file(self) -> Path:
@@ -185,6 +190,32 @@ class HeartbeatService:
         """Execute a single heartbeat tick."""
         from nanobot.utils.evaluator import evaluate_response
 
+        # --- P2P inbox scan ---
+        if self.p2p_shell and self.bus:
+            try:
+                new_msgs = self.p2p_shell.scan_new_inbox(since=self._last_inbox_scan)
+                if new_msgs:
+                    self._last_inbox_scan = time.time()
+                    from nanobot.bus.events import InboundMessage
+                    for msg in new_msgs:
+                        await self.bus.publish_inbound(
+                            InboundMessage(
+                                channel="p2p",
+                                sender_id=msg.get("from", "unknown"),
+                                chat_id=msg.get("task_id", ""),
+                                content=msg.get("payload", {}).get("description", ""),
+                                metadata={"p2p_msg": msg},
+                            )
+                        )
+                        logger.info(
+                            "Heartbeat: injected P2P task {} from {}",
+                            msg.get("task_id", ""),
+                            msg.get("from", "unknown"),
+                        )
+            except Exception:
+                logger.exception("Heartbeat P2P scan failed")
+
+        # --- Legacy heartbeat file check ---
         content = self._read_heartbeat_file()
         if not content:
             logger.debug("Heartbeat: HEARTBEAT.md missing or empty")

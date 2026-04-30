@@ -24,6 +24,14 @@ from nanobot.agent.runner import _MAX_INJECTIONS_PER_TURN, AgentRunner, AgentRun
 from nanobot.agent.subagent import SubagentManager
 from nanobot.agent.tools.file_state import FileStateStore, bind_file_states, reset_file_states
 from nanobot.agent.tools.message import MessageTool
+from nanobot.agent.tools.p2p import (
+    BroadcastTaskTool,
+    CheckAggregationTool,
+    DispatchTaskTool,
+    FinalizeTaskTool,
+    PollTaskResultTool,
+    ReportUserTool,
+)
 from nanobot.agent.tools.registry import ToolRegistry
 from nanobot.agent.tools.self import MyTool
 from nanobot.bus.events import InboundMessage, OutboundMessage
@@ -185,6 +193,7 @@ class AgentLoop:
         model_preset: str | None = None,
         preset_snapshot_loader: preset_helpers.PresetSnapshotLoader | None = None,
         runtime_model_publisher: Callable[[str, str | None], None] | None = None,
+        p2p_shell: Any | None = None,
     ):
         from nanobot.config.schema import ToolsConfig
 
@@ -192,6 +201,7 @@ class AgentLoop:
         defaults = AgentDefaults()
         self.bus = bus
         self.channels_config = channels_config
+        self.p2p_shell = p2p_shell
         self.provider = provider
         self._provider_snapshot_loader = provider_snapshot_loader
         self._preset_snapshot_loader = preset_snapshot_loader
@@ -462,6 +472,22 @@ class AgentLoop:
                 MyTool(runtime_state=self, modify_allowed=self.tools_config.my.allow_set)
             )
             registered.append("my")
+
+        # Register P2P tools if enabled
+        if self.p2p_shell:
+            self.tools.register(DispatchTaskTool(shell=self.p2p_shell))
+            self.tools.register(PollTaskResultTool(shell=self.p2p_shell))
+            self.tools.register(BroadcastTaskTool(shell=self.p2p_shell))
+            self.tools.register(CheckAggregationTool(shell=self.p2p_shell))
+            self.tools.register(
+                ReportUserTool(
+                    send_callback=self.bus.publish_outbound,
+                    default_channel=getattr(self.channels_config, "default_channel", ""),
+                    default_chat_id=getattr(self.channels_config, "default_chat_id", ""),
+                )
+            )
+            self.tools.register(FinalizeTaskTool(shell=self.p2p_shell, session_manager=self.sessions))
+            registered.append("p2p")
 
         logger.info("Registered {} tools: {}", len(registered), registered)
 

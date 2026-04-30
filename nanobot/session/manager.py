@@ -8,7 +8,7 @@ from contextlib import suppress
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from loguru import logger
 
@@ -580,6 +580,36 @@ class SessionManager:
                 logger.info("Recovered read-only session view {} from corrupt file", key)
                 return self._session_payload(repaired)
             return None
+
+    def get_or_create_task_session(
+        self,
+        base_key: str,
+        task_id: str,
+        role: Literal["manager", "worker"] = "worker",
+    ) -> Session:
+        """Get or create an isolated session for a specific task.
+
+        Key format: task:{base_key}:{task_id}:{role}
+        Example: task:slack:C123:root_qml:manager
+        """
+        task_key = f"task:{base_key}:{task_id}:{role}"
+        return self.get_or_create(task_key)
+
+    def list_task_sessions(self, base_key: str) -> list[Session]:
+        """List all task-scoped sessions for a given base key."""
+        prefix = f"task:{base_key}:"
+        return [
+            session for key, session in self._cache.items()
+            if key.startswith(prefix)
+        ]
+
+    def finalize_task_session(self, task_id: str) -> None:
+        """Mark a task session as finalized (read-only) by setting metadata."""
+        prefix = f"task:"
+        for key, session in list(self._cache.items()):
+            if f":{task_id}:" in key and key.startswith(prefix):
+                session.metadata["finalized"] = True
+                self.save(session)
 
     def list_sessions(self) -> list[dict[str, Any]]:
         """
