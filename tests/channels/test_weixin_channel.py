@@ -1252,6 +1252,26 @@ async def test_send_text_succeeds_on_zero_errcode() -> None:
     channel._api_post.assert_awaited_once()
 
 
+@pytest.mark.asyncio
+async def test_send_text_raises_on_nonzero_ret_even_when_errcode_zero() -> None:
+    """_send_text must raise when the API returns ret != 0, even if errcode is 0.
+
+    The iLink API signals failure through either field.  Checking only errcode
+    caused silent message drops (responses generated but never delivered).
+    """
+    channel, _bus = _make_channel()
+    channel._client = object()
+    channel._token = "token"
+    channel._api_post = AsyncMock(
+        return_value={"ret": -100, "errcode": 0, "errmsg": "internal error"}
+    )
+
+    with pytest.raises(RuntimeError, match="WeChat send text error.*ret=-100.*errcode=0"):
+        await channel._send_text("wx-user", "hello", "ctx-ok")
+
+    channel._api_post.assert_awaited_once()
+
+
 # ---------------------------------------------------------------------------
 # Tests for _poll_once not silently dropping messages on processing errors
 # ---------------------------------------------------------------------------

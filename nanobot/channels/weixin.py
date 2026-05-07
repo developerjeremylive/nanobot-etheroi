@@ -526,6 +526,22 @@ class WeixinChannel(BaseChannel):
                 f"WeChat session paused, {remaining_min} min remaining (errcode {ERRCODE_SESSION_EXPIRED})"
             )
 
+    @staticmethod
+    def _check_response_error(data: dict, operation: str) -> None:
+        """Check both ``ret`` and ``errcode`` like the reference TS code.
+
+        The iLink API may signal failure through either field (or both).
+        ``_poll_once`` already checks both; outbound send helpers must do
+        the same to avoid silent drops.
+        """
+        ret = data.get("ret", 0)
+        errcode = data.get("errcode", 0)
+        is_error = (ret is not None and ret != 0) or (errcode is not None and errcode != 0)
+        if is_error:
+            raise RuntimeError(
+                f"WeChat {operation} error (ret={ret}, errcode={errcode}): {data.get('errmsg', '')}"
+            )
+
     async def _poll_once(self) -> None:
         remaining = self._session_pause_remaining_s()
         if remaining > 0:
@@ -1123,11 +1139,8 @@ class WeixinChannel(BaseChannel):
         }
 
         data = await self._api_post("ilink/bot/sendmessage", body)
-        errcode = data.get("errcode", 0)
-        if errcode and errcode != 0:
-            raise RuntimeError(
-                f"WeChat send text error (code {errcode}): {data.get('errmsg', '')}"
-            )
+        self._check_response_error(data, "send text")
+        self.logger.debug("WeChat text sent to {} (client_id={})", to_user_id, client_id)
 
     async def _send_media_file(
         self,
@@ -1273,11 +1286,7 @@ class WeixinChannel(BaseChannel):
         }
 
         data = await self._api_post("ilink/bot/sendmessage", body)
-        errcode = data.get("errcode", 0)
-        if errcode and errcode != 0:
-            raise RuntimeError(
-                f"WeChat send media error (code {errcode}): {data.get('errmsg', '')}"
-            )
+        self._check_response_error(data, "send media")
 
 
 # ---------------------------------------------------------------------------
