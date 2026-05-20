@@ -1422,6 +1422,10 @@ class AgentLoop:
                 filtered.append({"type": "text", "text": image_placeholder_text(path)})
                 continue
 
+            if block.get("type") in ("input_audio", "video_url"):
+                filtered.append(LLMProvider._media_placeholder(block["type"], block))
+                continue
+
             if block.get("type") == "text" and isinstance(block.get("text"), str):
                 text = block["text"]
                 if should_truncate_text and len(text) > self.max_tool_result_chars:
