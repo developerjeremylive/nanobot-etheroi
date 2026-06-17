@@ -23,9 +23,9 @@ from loguru import logger
 from websockets.http11 import Request as WsRequest
 from websockets.http11 import Response
 
+from nanobot.automations.cron.session_turns import is_bound_cron_job
+from nanobot.automations.cron.types import CronJob, CronSchedule
 from nanobot.command.builtin import builtin_command_palette
-from nanobot.cron.session_turns import is_bound_cron_job
-from nanobot.cron.types import CronJob, CronSchedule
 from nanobot.utils.subagent_channel_display import scrub_subagent_messages_for_channel
 from nanobot.webui.file_preview import WebUIFilePreviewError, file_preview_payload
 from nanobot.webui.gateway_tokens import GatewayTokenStore, token_response_payload
@@ -86,8 +86,8 @@ _SLOW_WEBUI_HTTP_LOG_MS = 1_000
 _AUTOMATION_VALUES_HEADER = "X-Nanobot-Automation-Values"
 
 if TYPE_CHECKING:
+    from nanobot.automations.cron.service import CronService
     from nanobot.bus.queue import MessageBus
-    from nanobot.cron.service import CronService
     from nanobot.session.manager import SessionManager
 
 

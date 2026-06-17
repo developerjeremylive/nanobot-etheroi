@@ -40,6 +40,7 @@ If a local `nanobot agent` session can already answer normally, you can also ask
 |---|---|---|
 | Use nanobot in a browser | [`webui.md`](./webui.md) | Enable WebSocket, run `nanobot gateway`, open `http://127.0.0.1:8765` |
 | Talk through a chat app | [`chat-apps.md`](./chat-apps.md) | Merge one channel snippet, run `nanobot channels status`, keep `nanobot gateway` running |
+| Run condition-based automations | [`automation-triggers.md`](./automation-triggers.md) | Use local Python trigger scripts from `nanobot gateway` |
 | Change provider or add fallbacks | [`provider-cookbook.md`](./provider-cookbook.md) | Keep `modelPresets` named and set `agents.defaults.modelPreset` |
 | Understand before operating long-term | [`concepts.md`](./concepts.md) | Know what config, workspace, gateway, sessions, memory, and tools mean |
 | Diagnose a new failure | [`troubleshooting.md`](./troubleshooting.md) | Start with `nanobot status`, then `nanobot agent -m "Hello!"` |
@@ -51,6 +52,7 @@ If a local `nanobot agent` session can already answer normally, you can also ask
 | Open the bundled browser UI | [`webui.md`](./webui.md) | WebUI on port `8765`, chat workspace, Apps, Skills, Automations, and settings |
 | Connect Telegram, Discord, WeChat, Slack, and other apps | [`chat-apps.md`](./chat-apps.md) | A gateway-backed chat channel with access control |
 | Use slash commands and periodic tasks | [`chat-commands.md`](./chat-commands.md) | Pairing, model presets, heartbeat tasks, and chat-side controls |
+| Run condition-based automations | [`automation-triggers.md`](./automation-triggers.md) | Script trigger config and `trigger(ctx)` return values |
 | Generate images | [`image-generation.md`](./image-generation.md) | Image provider config, WebUI image mode, and artifact behavior |
 | Run several isolated bots | [`multiple-instances.md`](./multiple-instances.md) | Separate configs, workspaces, ports, and sessions |
 | Deploy outside a terminal | [`deployment.md`](./deployment.md) | Docker, systemd user services, and macOS LaunchAgent setup |

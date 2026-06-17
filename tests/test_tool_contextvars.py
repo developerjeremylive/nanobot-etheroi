@@ -9,7 +9,7 @@ from nanobot.agent.tools.context import RequestContext
 from nanobot.agent.tools.cron import CronTool
 from nanobot.agent.tools.message import MessageTool
 from nanobot.agent.tools.spawn import SpawnTool
-from nanobot.cron.service import CronService
+from nanobot.automations.cron.service import CronService
 from nanobot.session.keys import UNIFIED_SESSION_KEY
 
 

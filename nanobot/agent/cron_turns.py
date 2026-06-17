@@ -6,12 +6,12 @@ import asyncio
 import dataclasses
 from collections.abc import Awaitable, Callable, Iterable
 
-from nanobot.bus.events import InboundMessage, OutboundMessage
-from nanobot.cron.session_turns import (
+from nanobot.automations.cron.session_turns import (
     cron_run_id,
     cron_trigger,
     defer_cron_until_session_idle,
 )
+from nanobot.bus.events import InboundMessage, OutboundMessage
 
 
 class CronTurnCoordinator:

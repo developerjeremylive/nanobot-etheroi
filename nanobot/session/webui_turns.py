@@ -10,6 +10,7 @@ from typing import Any
 
 from loguru import logger
 
+from nanobot.automations.cron.session_turns import CRON_HISTORY_META
 from nanobot.bus import progress as bus_progress
 from nanobot.bus.events import InboundMessage, OutboundMessage
 from nanobot.bus.queue import MessageBus
@@ -22,7 +23,6 @@ from nanobot.bus.runtime_events import (
     TurnCompleted,
     TurnRunStatusChanged,
 )
-from nanobot.cron.session_turns import CRON_HISTORY_META
 from nanobot.providers.base import LLMProvider
 from nanobot.session.goal_state import goal_state_ws_blob
 from nanobot.session.manager import Session, SessionManager

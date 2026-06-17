@@ -357,6 +357,7 @@ Need help with `PATH`, API keys, provider/model matching, or JSON errors? See th
 - Want web search, MCP, security settings, or more config options? See [Configuration](./docs/configuration.md)
 - Want to run locally? See [Ollama](./docs/providers.md#ollama), [vLLM or another local OpenAI-compatible server](./docs/providers.md#vllm-or-other-local-openai-compatible-server), and the full [provider reference](./docs/configuration.md#providers).
 - Want to run nanobot in chat apps like Telegram, Discord, WeChat or Feishu? See [Chat Apps](./docs/chat-apps.md)
+- Want condition-based automations instead of only schedules? See [Automation Triggers](./docs/automation-triggers.md)
 - Want Docker or Linux service deployment? See [Deployment](./docs/deployment.md)
 
 ## 🌐 WebUI

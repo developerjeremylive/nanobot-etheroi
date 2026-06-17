@@ -16,8 +16,8 @@ from urllib.parse import unquote, urlparse
 
 from loguru import logger
 
+from nanobot.automations.cron.session_turns import CRON_HISTORY_META
 from nanobot.config.paths import get_webui_dir
-from nanobot.cron.session_turns import CRON_HISTORY_META
 from nanobot.session.manager import SessionManager
 from nanobot.webui.metadata import WEBUI_MESSAGE_SOURCE_METADATA_KEY, WEBUI_TURN_METADATA_KEY
 

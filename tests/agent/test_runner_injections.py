@@ -683,11 +683,11 @@ async def test_followup_routed_to_pending_queue(tmp_path):
 @pytest.mark.asyncio
 async def test_cron_turn_deferred_while_session_active(tmp_path):
     """Cron turns wait for the active session instead of becoming injections."""
-    from nanobot.bus.events import InboundMessage
-    from nanobot.cron.session_turns import (
+    from nanobot.automations.cron.session_turns import (
         CRON_DEFER_UNTIL_IDLE_META,
         CRON_TRIGGER_META,
     )
+    from nanobot.bus.events import InboundMessage
 
     loop = _make_loop(tmp_path)
     loop._dispatch = AsyncMock()  # type: ignore[method-assign]
@@ -733,8 +733,8 @@ async def test_cron_turn_deferred_while_session_active(tmp_path):
 @pytest.mark.asyncio
 async def test_submitted_cron_turn_reports_pending_until_completed(tmp_path):
     """Bound cron jobs remain marked pending while their session turn is in flight."""
+    from nanobot.automations.cron.session_turns import CRON_TRIGGER_META
     from nanobot.bus.events import InboundMessage, OutboundMessage
-    from nanobot.cron.session_turns import CRON_TRIGGER_META
 
     loop = _make_loop(tmp_path)
     loop._running = True

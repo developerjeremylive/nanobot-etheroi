@@ -15,9 +15,9 @@ from urllib.parse import quote, urlencode
 import httpx
 import pytest
 
+from nanobot.automations.cron.service import CronService
+from nanobot.automations.cron.types import CronJob, CronPayload, CronSchedule
 from nanobot.channels.websocket import WebSocketChannel, WebSocketConfig
-from nanobot.cron.service import CronService
-from nanobot.cron.types import CronJob, CronPayload, CronSchedule
 from nanobot.session.keys import UNIFIED_SESSION_KEY
 from nanobot.session.manager import Session, SessionManager
 from nanobot.webui.gateway_services import GatewayServices, build_gateway_services

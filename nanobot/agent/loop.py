@@ -30,6 +30,9 @@ from nanobot.agent.tools.file_state import FileStateStore, bind_file_states, res
 from nanobot.agent.tools.message import MessageTool
 from nanobot.agent.tools.registry import ToolRegistry
 from nanobot.agent.tools.self import MyTool
+from nanobot.automations.cron.session_turns import (
+    cron_history_overrides,
+)
 from nanobot.bus.events import InboundMessage, OutboundMessage
 from nanobot.bus.progress import build_bus_progress_callback
 from nanobot.bus.queue import MessageBus
@@ -40,9 +43,6 @@ from nanobot.bus.runtime_events import (
 )
 from nanobot.command import CommandContext, CommandRouter, register_builtin_commands
 from nanobot.config.schema import AgentDefaults, ModelPresetConfig
-from nanobot.cron.session_turns import (
-    cron_history_overrides,
-)
 from nanobot.providers.base import LLMProvider
 from nanobot.providers.factory import ProviderSnapshot
 from nanobot.security.workspace_access import (
@@ -68,12 +68,12 @@ from nanobot.utils.runtime import (
 )
 
 if TYPE_CHECKING:
+    from nanobot.automations.cron.service import CronService
     from nanobot.config.schema import (
         ChannelsConfig,
         ProviderConfig,
         ToolsConfig,
     )
-    from nanobot.cron.service import CronService
 
 
 class TurnState(Enum):

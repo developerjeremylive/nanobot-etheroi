@@ -29,6 +29,7 @@ For setup and runtime failures, follow the diagnosis order in [`troubleshooting.
 | Add MCP servers | [MCP](#mcp-model-context-protocol) |
 | Review shell, workspace, and SSRF controls | [Security](#security) |
 | Control access and pairing | [Pairing](#pairing) |
+| Run condition-based automations | [Automation Triggers](#automation-triggers) |
 | Tune gateway jobs, sessions, and tools | [Gateway Heartbeat](#gateway-heartbeat), [Auto Compact](#auto-compact), [Unified Session](#unified-session), [Tool Hint Max Length](#tool-hint-max-length) |
 
 ## Where to Edit First
@@ -46,6 +47,7 @@ If you are not sure where a setting belongs, start from the task you are trying 
 | Enable web search or fetch | `tools.web.search.*`, `tools.web.fetch.*`, optional `tools.ssrfWhitelist` | Ask a question that requires current web information, then inspect logs if needed | [Web Tools](#web-tools), [Security](#security) |
 | Enable image generation | `tools.imageGeneration.enabled`, `tools.imageGeneration.provider`, `tools.imageGeneration.model`, matching provider credentials | Enable Image Generation in the WebUI and send one image request | [Image Generation](#image-generation) |
 | Add external tools through MCP | `tools.mcpServers.<name>` | Start `nanobot gateway --verbose` and check startup/tool logs | [MCP](#mcp-model-context-protocol) |
+| Run condition-based automations | `automations.enabled`, `automations.jobs[].trigger` | Start `nanobot gateway --verbose` and check automation logs | [Automation Triggers](#automation-triggers) |
 | Tighten tool and network safety | `tools.restrictToWorkspace`, `tools.exec.sandbox`, `tools.ssrfWhitelist`, `channels.*.allowFrom` | Run the same workflow through the channel or CLI you plan to expose | [Security](#security), [Pairing](#pairing) |
 | Run multiple isolated bots | separate `--config` and `--workspace` paths, plus distinct `gateway.port` or channel ports when processes run together | Start each process with explicit paths and run `nanobot status` for the default instance only | [Multiple Instances](./multiple-instances.md), [CLI Reference](./cli-reference.md) |
 | Observe model calls | `LANGFUSE_SECRET_KEY`, `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_BASE_URL` environment variables | Run one model call, then check the matching Langfuse project | [Langfuse Observability](#langfuse-observability) |
@@ -1801,6 +1803,51 @@ From the terminal:
 nanobot agent -m "/pairing list"
 nanobot agent -m "/pairing approve ABCD-EFGH"
 ```
+
+
+## Automation Triggers
+
+Use `automations` when an agent turn should run because a trigger fires. Existing
+scheduled automations are cron-triggered through the `cron` tool and WebUI
+Automations view. The config below uses the script trigger kind: a local Python
+script polled by `nanobot gateway`.
+
+```json
+{
+  "automations": {
+    "enabled": true,
+    "intervalS": 10,
+    "jobs": [
+      {
+        "id": "review-new-pr",
+        "trigger": {
+          "kind": "script",
+          "script": "triggers/github_pr.py",
+          "timeoutS": 5
+        },
+        "message": "Review this PR:\n{title}\n{url}",
+        "channel": "websocket",
+        "chatId": "default"
+      }
+    ]
+  }
+}
+```
+
+See [`automation-triggers.md`](./automation-triggers.md) for the script
+interface, return values, state file, and dedupe behavior.
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `automations.enabled` | `false` | Enable configured automation jobs. |
+| `automations.intervalS` | `5` | Seconds between trigger polls. |
+| `automations.jobs[].id` | required | Stable automation ID, also used for state storage. |
+| `automations.jobs[].trigger.kind` | `"script"` | Trigger kind. |
+| `automations.jobs[].trigger.script` | required | Local Python script path, relative to the workspace unless absolute. |
+| `automations.jobs[].trigger.timeoutS` | `10` | Per-poll script timeout in seconds. |
+| `automations.jobs[].message` | `""` | Prompt template rendered with the trigger payload. |
+| `automations.jobs[].channel` | `"websocket"` | Channel for the generated inbound turn. |
+| `automations.jobs[].chatId` | `"default"` | Chat ID for the generated inbound turn. |
 
 
 ## Gateway Heartbeat

@@ -14,8 +14,8 @@ from typing import Any, Callable, Coroutine, Literal
 from filelock import FileLock
 from loguru import logger
 
-from nanobot.cron.session_turns import is_bound_cron_job
-from nanobot.cron.types import (
+from nanobot.automations.cron.session_turns import is_bound_cron_job
+from nanobot.automations.cron.types import (
     CronJob,
     CronJobState,
     CronPayload,

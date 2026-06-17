@@ -5,7 +5,7 @@ from datetime import datetime
 from pathlib import Path
 
 import nanobot.webui.session_list_index as session_list_index
-from nanobot.cron.session_turns import CRON_HISTORY_META
+from nanobot.automations.cron.session_turns import CRON_HISTORY_META
 from nanobot.session.manager import SessionManager
 
 

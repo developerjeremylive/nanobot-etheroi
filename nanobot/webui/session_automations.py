@@ -5,8 +5,8 @@ from __future__ import annotations
 from collections.abc import Collection
 from typing import Any, Protocol
 
-from nanobot.cron.session_turns import CRON_HISTORY_META
-from nanobot.cron.types import CronJob
+from nanobot.automations.cron.session_turns import CRON_HISTORY_META
+from nanobot.automations.cron.types import CronJob
 from nanobot.session.manager import _message_preview_text
 
 

@@ -7,8 +7,8 @@ from typing import TYPE_CHECKING, Any, Literal
 from pydantic import AliasChoices, ConfigDict, Field, model_validator
 from pydantic_settings import BaseSettings
 
+from nanobot.automations.cron.types import CronSchedule
 from nanobot.config_base import Base
-from nanobot.cron.types import CronSchedule
 
 if TYPE_CHECKING:
     from nanobot.agent.tools.cli_apps import CliAppsToolConfig
@@ -274,6 +274,34 @@ class HeartbeatConfig(Base):
     keep_recent_messages: int = 8
 
 
+class AutomationTriggerConfig(Base):
+    """Trigger that decides when an automation runs."""
+
+    kind: Literal["script"] = "script"
+    script: str
+    timeout_s: float = Field(default=10.0, ge=0.1)
+
+
+class AutomationDefinition(Base):
+    """A configured automation and its trigger."""
+
+    id: str
+    trigger: AutomationTriggerConfig
+    message: str = ""
+    channel: str = "websocket"
+    chat_id: str = "default"
+    session_key: str | None = None
+    enabled: bool = True
+
+
+class AutomationsConfig(Base):
+    """Lightweight automations."""
+
+    enabled: bool = False
+    interval_s: float = Field(default=5.0, ge=1.0)
+    jobs: list[AutomationDefinition] = Field(default_factory=list)
+
+
 class ApiConfig(Base):
     """OpenAI-compatible API server configuration."""
 
@@ -348,6 +376,7 @@ class Config(BaseSettings):
     channels: ChannelsConfig = Field(default_factory=ChannelsConfig)
     transcription: TranscriptionConfig = Field(default_factory=TranscriptionConfig)
     providers: ProvidersConfig = Field(default_factory=ProvidersConfig)
+    automations: AutomationsConfig = Field(default_factory=AutomationsConfig)
     api: ApiConfig = Field(default_factory=ApiConfig)
     gateway: GatewayConfig = Field(default_factory=GatewayConfig)
     tools: ToolsConfig = Field(default_factory=ToolsConfig)
