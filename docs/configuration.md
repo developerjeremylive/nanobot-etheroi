@@ -1968,8 +1968,10 @@ Use the HMAC header when the sender supports request signing. Bearer-style heade
         "provider": "github",
         "secret": "${GITHUB_WEBHOOK_SECRET}",
         "to": "discord:repo-events",
+        "events": ["pull_request"],
+        "actions": ["opened", "synchronize", "reopened", "ready_for_review"],
         "thread": "github:{{ github.repository_full_name }}:{{ github.pull_request.number or github.issue.number or github.ref }}",
-        "prompt": "Handle {{ github.event }} {{ github.action }} for {{ github.repository_full_name }}.\n\n{{ body }}"
+        "prompt": "Review {{ github.repository_full_name }} PR #{{ github.pull_request.number }} after {{ github.action }}.\n\n{{ body }}"
       }
     }
   }
@@ -1977,6 +1979,7 @@ Use the HMAC header when the sender supports request signing. Bearer-style heade
 ```
 
 For `provider: "github"`, nanobot validates GitHub's `X-Hub-Signature-256` HMAC header and deduplicates deliveries by `X-GitHub-Delivery` for `dedupeTtlS` seconds.
+Use `events` and `actions` to keep setup pings, issue events, or unrelated PR actions from starting an agent turn.
 
 ### Template data
 
@@ -2000,10 +2003,12 @@ Common template variables:
 | `webhooks.enabled` | `true` | Enables the webhook subsystem. |
 | `webhooks.routes.<name>.enabled` | `true` | Enables one route. Route names may contain letters, numbers, `_`, `.`, and `-`. |
 | `webhooks.routes.<name>.path` | `/webhooks/<name>` | HTTP path served by the gateway. `/health` is reserved. |
-| `webhooks.routes.<name>.provider` | `generic` | `generic` or `github`. Provider controls signature and context handling. |
+| `webhooks.routes.<name>.provider` | `generic` | Registered webhook provider. Built-ins are `generic` and `github`; provider controls signature and context handling. |
 | `webhooks.routes.<name>.auth` | `secret` | `secret` or `none`. |
 | `webhooks.routes.<name>.secret` | empty | Shared secret or signing secret. Use `${ENV_VAR}` placeholders for real deployments. |
 | `webhooks.routes.<name>.to` | empty | Required target address in `channel:chat` format. |
+| `webhooks.routes.<name>.events` | `[]` | Optional provider event-name allowlist. For GitHub this matches `X-GitHub-Event`, such as `pull_request`. |
+| `webhooks.routes.<name>.actions` | `[]` | Optional JSON payload `action` allowlist, such as `opened` or `synchronize`. |
 | `webhooks.routes.<name>.thread` | empty | Optional Jinja template for the session key. Defaults to `to`. |
 | `webhooks.routes.<name>.prompt` | empty | Optional Jinja template for the inbound agent message. |
 | `webhooks.routes.<name>.sender` | `webhook` | Sender ID placed on the inbound message. |

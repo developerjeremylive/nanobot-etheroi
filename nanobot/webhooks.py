@@ -155,6 +155,16 @@ class WebhookRouter:
             remote=remote,
         )
         delivery_id = context.get("delivery_id")
+        if not _route_filter_allows(route, context):
+            return {
+                "ok": True,
+                "queued": False,
+                "ignored": True,
+                "route": name,
+                "event": context.get("event_name") or "",
+                "action": context.get("action") or "",
+                "delivery_id": delivery_id or None,
+            }
         prompt = _render_prompt(route, context)
         channel, chat_id = _parse_target(route.to)
         thread = _render_thread(route, context) or route.to
@@ -311,6 +321,7 @@ def _template_context(
     provider_context = _webhook_provider(route.provider).context(headers, event)
     event_name = provider_context.pop("event_name", "")
     delivery_id = provider_context.pop("delivery_id", "")
+    action = _event_action(event, provider_context)
     return {
         "route": {
             "name": name,
@@ -326,11 +337,39 @@ def _template_context(
         "body": body_text,
         "headers": _safe_headers(headers),
         "remote": remote or "",
+        "action": action,
         "github": provider_context.get("github", {}),
         "event_name": event_name,
         "delivery_id": delivery_id,
         **provider_context,
     }
+
+
+def _event_action(event: Mapping[str, Any], provider_context: Mapping[str, Any]) -> str:
+    github = provider_context.get("github")
+    if isinstance(github, Mapping):
+        action = github.get("action")
+        if isinstance(action, str):
+            return action
+    action = event.get("action")
+    return action if isinstance(action, str) else ""
+
+
+def _route_filter_allows(route: WebhookRouteConfig, context: Mapping[str, Any]) -> bool:
+    return _filter_matches(route.events, context.get("event_name")) and _filter_matches(
+        route.actions, context.get("action")
+    )
+
+
+def _filter_matches(allowed: list[str], value: Any) -> bool:
+    if not allowed:
+        return True
+    normalized = _filter_value(value)
+    return normalized in {_filter_value(item) for item in allowed}
+
+
+def _filter_value(value: Any) -> str:
+    return value.strip().lower() if isinstance(value, str) else ""
 
 
 def _generic_context(headers: Mapping[str, str], _payload: Mapping[str, Any]) -> dict[str, Any]:

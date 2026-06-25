@@ -313,6 +313,8 @@ class WebhookRouteConfig(Base):
     to: str = ""  # Required when enabled, e.g. "websocket:github" or "telegram:12345".
     thread: str = ""  # Optional explicit session key; defaults to ``to``.
     prompt: str = ""  # Optional Jinja template; a generic event summary is used when empty.
+    events: list[str] = Field(default_factory=list)  # Optional provider event-name allowlist.
+    actions: list[str] = Field(default_factory=list)  # Optional JSON payload action allowlist.
     sender: str = "webhook"
     max_body_bytes: int = Field(default=1_048_576, ge=1024, le=10_485_760)
     dedupe_ttl_s: int = Field(default=3_600, ge=0, le=86_400)
@@ -328,6 +330,8 @@ class WebhookRouteConfig(Base):
                 raise ValueError("webhook route path must start with '/'")
             if "?" in self.path or "#" in self.path or any(ch.isspace() for ch in self.path):
                 raise ValueError("webhook route path must be a clean absolute path")
+        self.events = _clean_webhook_filter("events", self.events)
+        self.actions = _clean_webhook_filter("actions", self.actions)
         return self
 
 
@@ -385,6 +389,13 @@ def _lazy_default(module_path: str, class_name: str) -> Any:
     import importlib
     module = importlib.import_module(module_path)
     return getattr(module, class_name)()
+
+
+def _clean_webhook_filter(name: str, values: list[str]) -> list[str]:
+    cleaned = [value.strip() for value in values]
+    if any(not value for value in cleaned):
+        raise ValueError(f"webhook route {name} must not contain empty values")
+    return cleaned
 
 
 class ToolsConfig(Base):

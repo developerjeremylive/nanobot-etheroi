@@ -275,6 +275,76 @@ async def test_github_webhook_validates_signature_and_dedupes_delivery() -> None
 
 
 @pytest.mark.asyncio
+async def test_github_webhook_event_and_action_filters_ignore_unmatched_events() -> None:
+    bus = MessageBus()
+    router = WebhookRouter(
+        WebhooksConfig(
+            routes={
+                "github": WebhookRouteConfig(
+                    provider="github",
+                    secret="github-secret",
+                    to="discord:repo-events",
+                    events=["pull_request"],
+                    actions=["opened", "synchronize"],
+                )
+            }
+        ),
+        bus,
+    )
+
+    async def send(payload: dict[str, object], event: str, delivery: str):
+        body = json.dumps(payload).encode()
+        return await router.handle(
+            method="POST",
+            path="/webhooks/github",
+            headers={
+                "X-Hub-Signature-256": _sig("github-secret", body),
+                "X-GitHub-Event": event,
+                "X-GitHub-Delivery": delivery,
+            },
+            body=body,
+        )
+
+    ping = await send({"zen": "Keep it logically awesome."}, "ping", "ping-1")
+    closed = await send(
+        {
+            "action": "closed",
+            "repository": {"full_name": "HKUDS/nanobot"},
+            "pull_request": {"title": "Add webhook support"},
+        },
+        "pull_request",
+        "pr-closed-1",
+    )
+    opened = await send(
+        {
+            "action": "opened",
+            "repository": {"full_name": "HKUDS/nanobot"},
+            "pull_request": {"title": "Add webhook support"},
+        },
+        "pull_request",
+        "pr-opened-1",
+    )
+
+    assert ping is not None
+    assert ping.status == 202
+    assert ping.body["queued"] is False
+    assert ping.body["ignored"] is True
+    assert ping.body["event"] == "ping"
+    assert closed is not None
+    assert closed.status == 202
+    assert closed.body["queued"] is False
+    assert closed.body["ignored"] is True
+    assert closed.body["action"] == "closed"
+    assert opened is not None
+    assert opened.status == 202
+    assert opened.body["queued"] is True
+    assert bus.inbound_size == 1
+    msg = await bus.consume_inbound()
+    assert "Event: pull_request" in msg.content
+    assert "Action: opened" in msg.content
+
+
+@pytest.mark.asyncio
 async def test_github_webhook_rejects_invalid_signature() -> None:
     bus = MessageBus()
     router = WebhookRouter(
