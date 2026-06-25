@@ -118,6 +118,37 @@ async def test_generic_webhook_accepts_hmac_signature() -> None:
 
 
 @pytest.mark.asyncio
+async def test_custom_prompt_is_truncated_after_rendering() -> None:
+    bus = MessageBus()
+    router = WebhookRouter(
+        WebhooksConfig(
+            routes={
+                "big": WebhookRouteConfig(
+                    auth="none",
+                    to="websocket:ops",
+                    prompt="{{ body }}",
+                )
+            }
+        ),
+        bus,
+    )
+    body = b"a" * 1_048_576
+
+    response = await router.handle(
+        method="POST",
+        path="/webhooks/big",
+        headers={},
+        body=body,
+    )
+
+    assert response is not None
+    assert response.status == 202
+    msg = await bus.consume_inbound()
+    assert len(msg.content) < len(body)
+    assert msg.content.endswith("\n... (truncated)")
+
+
+@pytest.mark.asyncio
 async def test_webhook_without_delivery_id_is_not_deduped() -> None:
     bus = MessageBus()
     router = WebhookRouter(

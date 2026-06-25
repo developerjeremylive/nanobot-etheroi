@@ -363,7 +363,7 @@ def _render_prompt(route: WebhookRouteConfig, context: dict[str, Any]) -> str:
         raise WebhookError(400, f"webhook prompt template failed: {exc}") from exc
     if not rendered.strip():
         raise WebhookError(400, "webhook prompt template rendered empty content")
-    return rendered
+    return truncate_text(rendered, _DEFAULT_PROMPT_MAX_CHARS)
 
 
 def _render_thread(route: WebhookRouteConfig, context: dict[str, Any]) -> str:
