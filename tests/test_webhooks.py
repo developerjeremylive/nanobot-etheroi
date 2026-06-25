@@ -219,6 +219,47 @@ async def test_webhook_custom_path_and_thread_template() -> None:
 
 
 @pytest.mark.asyncio
+async def test_webhook_rejects_overlong_thread_template_without_dedupe() -> None:
+    bus = MessageBus()
+    router = WebhookRouter(
+        WebhooksConfig(
+            routes={
+                "deploy": WebhookRouteConfig(
+                    auth="none",
+                    to="websocket:ops",
+                    thread="deploy:{{ event.thread }}",
+                    prompt="Deploy {{ event.service }}",
+                )
+            }
+        ),
+        bus,
+    )
+
+    failed = await router.handle(
+        method="POST",
+        path="/webhooks/deploy",
+        headers={"X-Nanobot-Delivery": "delivery-3"},
+        body=json.dumps({"service": "api", "thread": "x" * 600}).encode(),
+    )
+    accepted = await router.handle(
+        method="POST",
+        path="/webhooks/deploy",
+        headers={"X-Nanobot-Delivery": "delivery-3"},
+        body=json.dumps({"service": "api", "thread": "release"}).encode(),
+    )
+
+    assert failed is not None
+    assert failed.status == 400
+    assert "thread template rendered too long" in failed.body["error"]
+    assert accepted is not None
+    assert accepted.status == 202
+    assert accepted.body["queued"] is True
+    assert bus.inbound_size == 1
+    msg = await bus.consume_inbound()
+    assert msg.session_key_override == "deploy:release"
+
+
+@pytest.mark.asyncio
 async def test_github_webhook_validates_signature_and_dedupes_delivery() -> None:
     bus = MessageBus()
     body = json.dumps(

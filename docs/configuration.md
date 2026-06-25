@@ -2009,7 +2009,7 @@ Common template variables:
 | `webhooks.routes.<name>.to` | empty | Required target address in `channel:chat` format. |
 | `webhooks.routes.<name>.events` | `[]` | Optional provider event-name allowlist. For GitHub this matches `X-GitHub-Event`, such as `pull_request`. |
 | `webhooks.routes.<name>.actions` | `[]` | Optional JSON payload `action` allowlist, such as `opened` or `synchronize`. |
-| `webhooks.routes.<name>.thread` | empty | Optional Jinja template for the session key. Defaults to `to`. |
+| `webhooks.routes.<name>.thread` | empty | Optional Jinja template for the session key. Defaults to `to`; rendered values are capped at 512 characters. |
 | `webhooks.routes.<name>.prompt` | empty | Optional Jinja template for the inbound agent message. |
 | `webhooks.routes.<name>.sender` | `webhook` | Sender ID placed on the inbound message. |
 | `webhooks.routes.<name>.maxBodyBytes` | `1048576` | Maximum request body size, from 1 KiB to 10 MiB. |

@@ -19,6 +19,7 @@ from nanobot.utils.helpers import truncate_text
 
 _HMAC_PREFIX = "sha256="
 _DEFAULT_PROMPT_MAX_CHARS = 24_000
+_DEFAULT_THREAD_MAX_CHARS = 512
 _REDACTED_HEADERS = {
     "authorization",
     "cookie",
@@ -494,7 +495,10 @@ def _render_thread(route: WebhookRouteConfig, context: dict[str, Any]) -> str:
         rendered = _jinja().from_string(template).render(**context)
     except TemplateError as exc:
         raise WebhookError(400, f"webhook thread template failed: {exc}") from exc
-    return rendered.strip()
+    rendered = rendered.strip()
+    if len(rendered) > _DEFAULT_THREAD_MAX_CHARS:
+        raise WebhookError(400, "webhook thread template rendered too long")
+    return rendered
 
 
 def _jinja() -> Environment:
