@@ -17,6 +17,11 @@ from nanobot.agent.tools.schema import (
     StringSchema,
     tool_parameters_schema,
 )
+from nanobot.agent.verification_state import (
+    analyze_verification_result,
+    append_verification_feedback,
+    record_verification_observation,
+)
 
 DEFAULT_YIELD_MS = 1000
 MAX_YIELD_MS = 30_000
@@ -351,6 +356,20 @@ def format_session_poll(session_id: str, poll: _SessionPoll) -> str:
     return "\n".join(parts) if parts else "(no output yet)"
 
 
+def _format_poll_with_verification(session_id: str, poll: _SessionPoll) -> str:
+    result = format_session_poll(session_id, poll)
+    if not poll.done:
+        return result
+    analysis = analyze_verification_result(
+        command="",
+        output=result,
+        exit_code=poll.exit_code,
+        timed_out=poll.timed_out,
+    )
+    record_verification_observation(current_request_session_key(), analysis)
+    return append_verification_feedback(result, analysis)
+
+
 @tool_parameters(
     tool_parameters_schema(
         session_id=StringSchema("Session id returned by exec when yield_time_ms is used."),
@@ -492,7 +511,7 @@ class WriteStdinTool(Tool):
                 max_output_chars=output_limit,
                 owner_session_key=current_request_session_key(),
             )
-            return format_session_poll(session_id, poll)
+            return _format_poll_with_verification(session_id, poll)
         except KeyError:
             return f"Error: exec session not found: {session_id}"
         except Exception as exc:
@@ -532,10 +551,10 @@ class WriteStdinTool(Tool):
                 joined = "".join(aggregate)
                 if wait_for in joined:
                     poll.output = joined
-                    return format_session_poll(session_id, poll)
+                    return _format_poll_with_verification(session_id, poll)
             if poll.done or remaining_ms <= 0:
                 poll.output = "".join(aggregate)
-                result = format_session_poll(session_id, poll)
+                result = _format_poll_with_verification(session_id, poll)
                 if wait_for not in poll.output:
                     result += f"\nWait target not observed: {wait_for!r}"
                 return result

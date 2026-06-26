@@ -104,6 +104,23 @@ def test_exec_one_shot_accepts_max_output_tokens_alias(tmp_path):
     assert "Exit code: 0" in result
 
 
+def test_exec_adds_verification_feedback_for_test_failures(tmp_path):
+    async def run() -> str:
+        tool = ExecTool(working_dir=str(tmp_path), timeout=5)
+        command = _python_command(
+            "print('FAILED test_outputs.py::test_answer - AssertionError: wrong'); "
+            "print('AssertionError: wrong'); raise SystemExit(1)"
+        )
+        return await tool.execute(command=command)
+
+    result = asyncio.run(run())
+
+    assert "Exit code: 1" in result
+    assert "[Verification Feedback]" in result
+    assert "Do not call complete_goal" in result
+    assert "test_outputs.py::test_answer" in result
+
+
 def test_exec_accepts_supported_shell_parameter(tmp_path):
     async def run() -> str:
         tool = ExecTool(working_dir=str(tmp_path), timeout=5)

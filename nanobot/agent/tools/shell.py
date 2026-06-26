@@ -33,6 +33,11 @@ from nanobot.agent.tools.schema import (
     StringSchema,
     tool_parameters_schema,
 )
+from nanobot.agent.verification_state import (
+    analyze_verification_result,
+    append_verification_feedback,
+    record_verification_observation,
+)
 from nanobot.config.paths import get_media_dir
 from nanobot.config_base import Base
 from nanobot.security.workspace_access import current_scope_allows_loopback, current_tool_workspace
@@ -283,7 +288,15 @@ class ExecTool(Tool):
                 )
             except asyncio.TimeoutError:
                 await self._kill_process(process)
-                return f"Error: Command timed out after {prepared.timeout} seconds"
+                result = f"Error: Command timed out after {prepared.timeout} seconds"
+                analysis = analyze_verification_result(
+                    command=prepared.command,
+                    output=result,
+                    exit_code=None,
+                    timed_out=True,
+                )
+                record_verification_observation(current_request_session_key(), analysis)
+                return append_verification_feedback(result, analysis)
             except asyncio.CancelledError:
                 await self._kill_process(process)
                 raise
@@ -311,7 +324,13 @@ class ExecTool(Tool):
                     + result[-half:]
                 )
 
-            return result
+            analysis = analyze_verification_result(
+                command=prepared.command,
+                output=result,
+                exit_code=process.returncode,
+            )
+            record_verification_observation(current_request_session_key(), analysis)
+            return append_verification_feedback(result, analysis)
 
         except Exception as e:
             return f"Error executing command: {str(e)}"
@@ -339,7 +358,17 @@ class ExecTool(Tool):
                     MAX_OUTPUT_CHARS,
                 ),
             )
-            return format_session_poll(session_id, poll)
+            result = format_session_poll(session_id, poll)
+            if poll.done:
+                analysis = analyze_verification_result(
+                    command=prepared.command,
+                    output=result,
+                    exit_code=poll.exit_code,
+                    timed_out=poll.timed_out,
+                )
+                record_verification_observation(current_request_session_key(), analysis)
+                return append_verification_feedback(result, analysis)
+            return result
         except Exception as exc:
             return f"Error executing command: {exc}"
 
