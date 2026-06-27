@@ -65,7 +65,6 @@ If a local `nanobot agent` session can already answer normally, you can also ask
 | CLI commands | [`cli-reference.md`](./cli-reference.md) | Command names, common flags, and entrypoints |
 | Architecture | [`architecture.md`](./architecture.md) | Source-level runtime map for core flow, providers, channels, tools, WebUI, memory, security, and extension points |
 | Development | [`development.md`](./development.md) | Contributor notes for adding providers and transcription adapters |
-| Agent reliability | [`agent-reliability-from-evals.md`](./agent-reliability-from-evals.md) | Runtime reliability lessons from long-running agent trajectories |
 | Memory | [`memory.md`](./memory.md) | Session history, Dream consolidation, memory files, and versioning |
 | Observability | [`configuration.md#langfuse-observability`](./configuration.md#langfuse-observability) | Langfuse tracing setup and required environment variables |
 | WebSocket protocol | [`websocket.md`](./websocket.md) | Custom clients, token issuance, multiplexed chats, media, and protocol events |
