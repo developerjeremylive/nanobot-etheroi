@@ -7,6 +7,7 @@ import os
 import re
 import shutil
 import sys
+import time
 from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
@@ -42,6 +43,7 @@ from nanobot.config.paths import get_media_dir
 from nanobot.config_base import Base
 from nanobot.security.workspace_access import current_scope_allows_loopback, current_tool_workspace
 from nanobot.security.workspace_policy import is_path_within
+from nanobot.utils.helpers import build_structured_output_summary
 
 _IS_WINDOWS = sys.platform == "win32"
 
@@ -273,6 +275,7 @@ class ExecTool(Tool):
             return await self._execute_session(prepared, yield_time_ms, max_output_chars)
 
         try:
+            started_at = time.monotonic()
             process = await self._spawn(
                 prepared.command,
                 prepared.cwd,
@@ -314,21 +317,33 @@ class ExecTool(Tool):
             output_parts.append(f"\nExit code: {process.returncode}")
 
             result = "\n".join(output_parts) if output_parts else "(no output)"
-
-            max_len = clamp_session_int(max_output_chars, self._MAX_OUTPUT, 1000, MAX_OUTPUT_CHARS)
-            if len(result) > max_len:
-                half = max_len // 2
-                result = (
-                    result[:half]
-                    + f"\n\n... ({len(result) - max_len:,} chars truncated) ...\n\n"
-                    + result[-half:]
-                )
+            elapsed_s = max(0.0, time.monotonic() - started_at)
 
             analysis = analyze_verification_result(
                 command=prepared.command,
                 output=result,
                 exit_code=process.returncode,
             )
+
+            max_len = clamp_session_int(max_output_chars, self._MAX_OUTPUT, 1000, MAX_OUTPUT_CHARS)
+            if len(result) > max_len:
+                result = build_structured_output_summary(
+                    "[tool output truncated]",
+                    result,
+                    max_chars=max_len,
+                    metadata=[
+                        ("original_size_chars", len(result)),
+                        ("exit_code", process.returncode),
+                        ("duration_s", f"{elapsed_s:.1f}"),
+                    ],
+                    analysis=analysis,
+                    guidance=(
+                        "Use the structured summary first. Rerun a narrower "
+                        "command, grep a specific failure, or inspect the "
+                        "named artifact instead of rerunning broad noisy logs."
+                    ),
+                )
+
             record_verification_observation(current_request_session_key(), analysis)
             return append_verification_feedback(result, analysis)
 
