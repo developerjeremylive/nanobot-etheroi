@@ -6,15 +6,13 @@ import os
 import time
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
-
 from nanobot.config.schema import AgentDefaults
 from nanobot.providers.base import LLMResponse, ToolCallRequest
 
 _MAX_TOOL_RESULT_CHARS = AgentDefaults().max_tool_result_chars
 
 async def test_runner_persists_large_tool_results_for_follow_up_calls(tmp_path):
-    from nanobot.agent.runner import AgentRunSpec, AgentRunner
+    from nanobot.agent.runner import AgentRunner, AgentRunSpec
 
     provider = MagicMock()
     captured_second_call: list[dict] = []
@@ -50,7 +48,13 @@ async def test_runner_persists_large_tool_results_for_follow_up_calls(tmp_path):
     assert result.final_content == "done"
     tool_message = next(msg for msg in captured_second_call if msg.get("role") == "tool")
     assert "[tool output persisted]" in tool_message["content"]
-    assert "tool-results" in tool_message["content"]
+    assert "tool_output_id: call_big" in tool_message["content"]
+    assert "original_size_chars: 20000" in tool_message["content"]
+    assert "head:" in tool_message["content"]
+    assert "tail:" in tool_message["content"]
+    assert "Read the saved file" not in tool_message["content"]
+    assert str(tmp_path) not in tool_message["content"]
+    assert len(tool_message["content"]) <= 2048
     assert (tmp_path / ".nanobot" / "tool-results" / "test_runner" / "call_big.txt").exists()
 
 
@@ -78,6 +82,8 @@ def test_persist_tool_result_prunes_old_session_buckets(tmp_path):
     )
 
     assert "[tool output persisted]" in persisted
+    assert "tool_output_id: call_big" in persisted
+    assert "tool-results" not in persisted
     assert not old_bucket.exists()
     assert recent_bucket.exists()
     assert (root / "current_session" / "call_big.txt").exists()
@@ -172,7 +178,7 @@ async def test_read_file_result_is_not_offloaded(tmp_path):
 
 
 async def test_runner_keeps_going_when_tool_result_persistence_fails():
-    from nanobot.agent.runner import AgentRunSpec, AgentRunner
+    from nanobot.agent.runner import AgentRunner, AgentRunSpec
 
     provider = MagicMock()
     captured_second_call: list[dict] = []
